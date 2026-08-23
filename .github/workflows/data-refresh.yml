@@ -43,7 +43,7 @@ jobs:
       - name: Compute scenario episodes
         working-directory: pipeline
         run: python compute_episodes.py
-      - name: Validate and write meta
+      - name: Write meta
         working-directory: pipeline
         run: python validate.py
       - name: Commit data
@@ -60,11 +60,16 @@ jobs:
             git push
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
+      # After the commit, turn an unhealthy refresh into a red run for visibility.
+      - name: Health gate
+        working-directory: pipeline
+        run: python validate.py --gate
 
   # GITHUB_TOKEN pushes don't fire the push trigger, so deploy explicitly.
+  # !cancelled(): deploy committed data even when the health gate turned red.
   deploy:
     needs: refresh
-    if: needs.refresh.outputs.changed == 'true'
+    if: ${{ !cancelled() && needs.refresh.outputs.changed == 'true' }}
     permissions:
       contents: read
       pages: write
