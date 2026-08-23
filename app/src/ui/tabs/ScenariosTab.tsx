@@ -3,6 +3,7 @@ import { runEpisode, runHypothetical, type ScenarioResult } from "../../engine/s
 import type { Portfolio, PriceSeries } from "../../engine/types";
 import { HBarChart } from "../charts/HBarChart";
 import { fmtMoney, fmtSignedPct } from "../format";
+import { HelpCard, HelpTip } from "../Help";
 import { usePortfolioAnalytics, type StaticData } from "../useAnalytics";
 
 interface Props {
@@ -50,7 +51,7 @@ function ResultView({ result }: { result: ScenarioResult }) {
             <th>Holding</th>
             <th className="num">Return</th>
             <th className="num">P&L</th>
-            <th>Basis</th>
+            <th>Basis<HelpTip text="'Actual history' = this investment existed during the episode, so its real returns are used. 'Estimated' = it's too young, so the number comes from a model of how it behaves — treat it as approximate." /></th>
           </tr>
         </thead>
         <tbody>
@@ -104,6 +105,34 @@ export function ScenariosTab({ portfolio, staticData, prices }: Props) {
 
   return (
     <>
+      <HelpCard title="What is a stress test?">
+        <p>
+          A <b>stress test</b> asks a simple question: <b>if a famous market crisis happened again tomorrow, what would
+          it do to your money?</b> Pick an episode — like the 2008 financial crisis or the COVID crash — and the app
+          replays it against your current portfolio.
+        </p>
+        <p>How it estimates each holding:</p>
+        <ul>
+          <li>
+            If the investment already existed back then, the app uses its <b>actual price history</b> from that period
+            — no guessing (shown as "actual history").
+          </li>
+          <li>
+            If it's too young, the app estimates from how it behaves: a stock that tends to swing twice as hard as the
+            market gets twice the market's crash (marked <b>"estimated"</b> — treat these as rough).
+          </li>
+          <li>
+            Bond funds respond mainly to <b>interest rates</b>: when rates rise, existing bonds paying old lower rates
+            become less attractive, so their price falls — and the longer the bond has left to run (its "duration"),
+            the harder it falls. The reverse when rates drop.
+          </li>
+          <li>Cash doesn't crash — it just earns whatever interest rates paid at the time.</li>
+        </ul>
+        <p>
+          The <b>hypothetical shock</b> below lets you invent your own crisis — drag the sliders for "stocks fall X%"
+          and "rates move Y" and see the damage instantly. (100 bps = 1 percentage point of interest rate.)
+        </p>
+      </HelpCard>
       <div className="card">
         <h2>Historical episode</h2>
         <div className="controls">

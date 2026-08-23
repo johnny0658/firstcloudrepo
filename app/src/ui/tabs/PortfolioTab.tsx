@@ -3,6 +3,7 @@ import { lastClose } from "../../engine/returns";
 import type { Portfolio, PriceSeries } from "../../engine/types";
 import { exportPortfolio, importPortfolio } from "../../state/portfolio";
 import { fmtMoneyFull, fmtPct } from "../format";
+import { HelpCard, HelpTip } from "../Help";
 import type { StaticData } from "../useAnalytics";
 
 const ADD_TICKER_URL = "https://github.com/johnny0658/firstcloudrepo#adding-a-ticker";
@@ -79,6 +80,24 @@ export function PortfolioTab({ portfolio, setPortfolio, staticData, prices }: Pr
 
   return (
     <>
+      <HelpCard title="New here? How this app works">
+        <p>
+          This is a <b>portfolio simulator</b>: you tell it what investments you own, and it uses ten years of real
+          market history to answer three questions — <b>how would my portfolio have survived past crises?</b> (Scenarios),{" "}
+          <b>where might it be in 5–30 years?</b> (Projections), and <b>what actually drives its ups and downs?</b> (Factors).
+        </p>
+        <p>
+          Start by adding each investment below. A <b>ticker</b> is just the short code an investment trades under —
+          AAPL is Apple stock, VOO is a fund holding the 500 biggest US companies, BND is a fund holding bonds
+          (loans to governments and companies that pay interest). Enter how many <b>shares</b> you own, or switch to{" "}
+          <b>dollars</b> and the app converts at the latest price. Add any uninvested <b>cash</b> too, so the analysis
+          sees your full picture.
+        </p>
+        <p>
+          <b>Privacy:</b> your portfolio never leaves this browser — it is saved only on this device. Use Export JSON
+          to back it up or move it to another device. Market prices are refreshed automatically every trading night.
+        </p>
+      </HelpCard>
       <div className="card">
         <h2>Add a holding</h2>
         <div className="controls">
@@ -181,7 +200,7 @@ export function PortfolioTab({ portfolio, setPortfolio, staticData, prices }: Pr
                 <th>Name</th>
                 <th className="num">Shares</th>
                 <th className="num">Value</th>
-                <th className="num">Weight</th>
+                <th className="num">Weight<HelpTip text="What share of your total portfolio this holding makes up. Big weights mean this one investment moves your whole portfolio." /></th>
                 <th />
               </tr>
             </thead>

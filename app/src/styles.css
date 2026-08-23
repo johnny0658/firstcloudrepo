@@ -145,3 +145,50 @@ button.link { background: none; border: none; color: var(--accent); cursor: poin
 footer.disclaimer { margin-top: 28px; color: var(--text-muted); font-size: 12px; border-top: 1px solid var(--grid); padding-top: 12px; }
 .error-box { border: 1px solid var(--delta-bad); border-radius: 8px; padding: 10px 14px; color: var(--delta-bad); margin-bottom: 14px; }
 .empty-hint { color: var(--text-secondary); padding: 24px 0; text-align: center; }
+
+/* ---- help system ---- */
+.help-card {
+  border: 1px solid var(--grid);
+  border-radius: 8px;
+  background: var(--page);
+  margin-bottom: 14px;
+  font-size: 13px;
+}
+.help-card summary {
+  cursor: pointer;
+  padding: 9px 14px;
+  color: var(--text-secondary);
+  user-select: none;
+  list-style: none;
+}
+.help-card summary::-webkit-details-marker { display: none; }
+.help-card summary:hover { color: var(--text-primary); }
+.help-card[open] summary { border-bottom: 1px solid var(--grid); }
+.help-body { padding: 10px 16px 12px; color: var(--text-secondary); }
+.help-body p { margin: 6px 0; }
+.help-body b { color: var(--text-primary); font-weight: 600; }
+.help-body ul { margin: 6px 0; padding-left: 20px; }
+.help-body li { margin: 4px 0; }
+
+.help-tip { position: relative; display: inline-block; margin-left: 5px; vertical-align: 1px; }
+.help-tip button {
+  width: 15px; height: 15px; padding: 0; line-height: 13px;
+  border-radius: 50%; border: 1px solid var(--baseline);
+  background: none; color: var(--text-muted);
+  font-size: 10px; font-weight: 600; cursor: pointer;
+}
+.help-tip button:hover, .help-tip button[aria-expanded="true"] {
+  color: var(--accent); border-color: var(--accent);
+}
+.help-bubble {
+  position: absolute; z-index: 10; left: 50%; transform: translateX(-50%);
+  bottom: calc(100% + 7px);
+  width: 240px; padding: 8px 11px;
+  background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
+  color: var(--text-secondary); font-size: 12px; font-weight: 400;
+  line-height: 1.45; text-align: left; white-space: normal;
+}
+@media (max-width: 560px) {
+  .help-bubble { left: auto; right: -10px; transform: none; }
+}

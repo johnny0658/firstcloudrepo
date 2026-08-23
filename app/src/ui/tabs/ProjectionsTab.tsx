@@ -4,6 +4,7 @@ import { hasEnoughHistory, mulberry32, normalFrom, project } from "../../engine/
 import type { Portfolio, PriceSeries } from "../../engine/types";
 import { FanChart } from "../charts/FanChart";
 import { fmtMoney } from "../format";
+import { HelpCard, HelpTip } from "../Help";
 import { usePortfolioAnalytics, type StaticData } from "../useAnalytics";
 
 interface Props {
@@ -53,7 +54,28 @@ export function ProjectionsTab({ portfolio, staticData, prices }: Props) {
     );
 
   return (
-    <div className="card">
+    <div>
+      <HelpCard title="How can anyone project the future?">
+        <p>
+          Nobody can predict markets — so instead of one prediction, this makes <b>2,000 of them</b>. Each simulated
+          future is built by reshuffling stretches of your portfolio's own past ten years: some futures happen to
+          replay mostly good stretches, others string bad ones together. This technique is called a{" "}
+          <b>Monte Carlo simulation</b> (named after the casino — it's built on rolling dice many times).
+        </p>
+        <p>
+          The chart summarizes all 2,000 futures at once. The <b>solid line is the median</b>: half the simulated
+          futures ended above it, half below. The shaded bands show the range —{" "}
+          <b>the bottom edge is a genuinely unlucky decade (only 1 future in 10 was worse)</b>, the top edge a lucky
+          one (1 in 10 was better). The fan widens over time because uncertainty compounds: the further out you look,
+          the less anyone knows.
+        </p>
+        <p>
+          Add a <b>monthly contribution</b> to see what steady saving does — over long horizons it often matters as
+          much as the market itself. Figures are in today's-style dollars <b>without</b> subtracting future inflation,
+          and history is no guarantee: the next ten years may be unlike the last ten.
+        </p>
+      </HelpCard>
+      <div className="card">
       <h2>Monte Carlo projection</h2>
       <div className="controls">
         <label>
@@ -87,9 +109,9 @@ export function ProjectionsTab({ portfolio, staticData, prices }: Props) {
               </tr>
             </thead>
             <tbody>
-              <tr><td>Pessimistic (10th percentile)</td><td className="num">{fmtMoney(result.terminal.p10)}</td></tr>
+              <tr><td>Pessimistic (10th percentile)<HelpTip text="Only 1 in 10 simulated futures ended up worse than this. Think of it as a genuinely unlucky outcome, not the worst case imaginable." /></td><td className="num">{fmtMoney(result.terminal.p10)}</td></tr>
               <tr><td>Below average (25th)</td><td className="num">{fmtMoney(result.terminal.p25)}</td></tr>
-              <tr><td>Median</td><td className="num">{fmtMoney(result.terminal.p50)}</td></tr>
+              <tr><td>Median<HelpTip text="The middle outcome: half the 2,000 simulated futures ended above this value, half below." /></td><td className="num">{fmtMoney(result.terminal.p50)}</td></tr>
               <tr><td>Above average (75th)</td><td className="num">{fmtMoney(result.terminal.p75)}</td></tr>
               <tr><td>Optimistic (90th)</td><td className="num">{fmtMoney(result.terminal.p90)}</td></tr>
               <tr><td style={{ fontWeight: 600 }}>Total contributed</td><td className="num" style={{ fontWeight: 600 }}>{fmtMoney(result.totalContributed)}</td></tr>
@@ -103,6 +125,7 @@ export function ProjectionsTab({ portfolio, staticData, prices }: Props) {
       ) : (
         <div className="empty-hint">Not enough return history to simulate yet.</div>
       )}
+      </div>
     </div>
   );
 }
