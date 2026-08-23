@@ -19,6 +19,11 @@ import time
 from common import DATA_DIR, http_get, load_json, write_json_if_changed
 
 HISTORY_YEARS = 10
+# Yahoo's adjustment factors wobble slightly between calls, which flips closes
+# sitting near a cent boundary. Same dates + every close within this absolute
+# tolerance = same data; keep the old file so re-runs don't churn the repo.
+# Real dividend/split re-adjustments shift history by far more than a cent.
+EQUIV_TOLERANCE = 0.011
 CHUNK_SIZE = 20
 STOOQ_URL = "https://stooq.com/q/d/l/?s={sym}&i=d"
 
@@ -128,6 +133,14 @@ def main() -> int:
             print(f"{symbol}: FAILED (no source returned data)", file=sys.stderr)
             continue
         rows = [r for r in rows if r[0] >= cutoff]
+        path = DATA_DIR / "prices" / f"{symbol}.json"
+        if path.exists():
+            prev = load_json(path)
+            if prev["dates"] == [r[0] for r in rows] and all(
+                abs(a - round(b[1], 2)) <= EQUIV_TOLERANCE for a, b in zip(prev["adjClose"], rows)
+            ):
+                print(f"{symbol}: unchanged (within tolerance)")
+                continue
         doc = {
             "ticker": symbol,
             "currency": "USD",
@@ -139,7 +152,7 @@ def main() -> int:
             # calls, so finer rounding causes spurious diffs on every re-run
             "adjClose": [round(r[1], 2) for r in rows],
         }
-        if write_json_if_changed(DATA_DIR / "prices" / f"{symbol}.json", doc):
+        if write_json_if_changed(path, doc):
             changed += 1
         print(f"{symbol}: {len(rows)} rows ({sources[symbol]})")
 
