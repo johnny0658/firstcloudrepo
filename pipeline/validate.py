@@ -27,8 +27,15 @@ def main() -> int:
     if ff_monthly.exists():
         factor_last = load_json(ff_monthly)["months"][-1]
 
+    # Data recency, not wall clock: the newest lastDate across price files.
+    # A run that changes no data then leaves meta.json untouched too.
+    last_dates = []
+    for t in universe:
+        f = DATA_DIR / "prices" / f"{t['symbol']}.json"
+        if f.exists():
+            last_dates.append(load_json(f)["lastDate"])
     meta = {
-        "lastUpdated": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "lastUpdated": max(last_dates) if last_dates else dt.date.today().isoformat(),
         "tickerCount": len(universe),
         "failures": sorted(set(failures) | set(missing)),
         "factorLastMonth": factor_last,

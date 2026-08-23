@@ -135,7 +135,9 @@ def main() -> int:
             "firstDate": rows[0][0],
             "lastDate": rows[-1][0],
             "dates": [r[0] for r in rows],
-            "adjClose": [round(r[1], 4) for r in rows],
+            # cents: Yahoo's adjustment factors wobble at the 4th decimal between
+            # calls, so finer rounding causes spurious diffs on every re-run
+            "adjClose": [round(r[1], 2) for r in rows],
         }
         if write_json_if_changed(DATA_DIR / "prices" / f"{symbol}.json", doc):
             changed += 1
