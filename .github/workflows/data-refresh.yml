@@ -1,0 +1,72 @@
+name: Data Refresh
+
+on:
+  schedule:
+    - cron: "20 6 * * 2-6" # ~06:20 UTC Tue-Sat = after US close Mon-Fri
+  workflow_dispatch:
+    inputs:
+      ticker:
+        description: "Optional single ticker to refresh (must already be listed in data/tickers.json)"
+        required: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: data-refresh
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.commit.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r pipeline/requirements.txt
+      - name: Fetch prices
+        working-directory: pipeline
+        run: |
+          if [ -n "${{ inputs.ticker }}" ]; then
+            python fetch_prices.py --only "${{ inputs.ticker }}"
+          else
+            python fetch_prices.py
+          fi
+      - name: Fetch factors
+        if: ${{ !inputs.ticker }}
+        working-directory: pipeline
+        run: python fetch_factors.py
+      - name: Compute scenario episodes
+        working-directory: pipeline
+        run: python compute_episodes.py
+      - name: Validate and write meta
+        working-directory: pipeline
+        run: python validate.py
+      - name: Commit data
+        id: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "no data changes"
+          else
+            git commit -m "data: refresh $(date -u +%F)"
+            git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  # GITHUB_TOKEN pushes don't fire the push trigger, so deploy explicitly.
+  deploy:
+    needs: refresh
+    if: needs.refresh.outputs.changed == 'true'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/deploy-pages.yml
