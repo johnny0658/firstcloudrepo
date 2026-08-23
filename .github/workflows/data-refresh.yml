@@ -11,8 +11,6 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
   group: data-refresh
@@ -71,7 +69,5 @@ jobs:
     needs: refresh
     if: ${{ !cancelled() && needs.refresh.outputs.changed == 'true' }}
     permissions:
-      contents: read
-      pages: write
-      id-token: write
+      contents: write
     uses: ./.github/workflows/deploy-pages.yml
