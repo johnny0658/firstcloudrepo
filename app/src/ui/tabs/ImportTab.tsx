@@ -22,7 +22,7 @@ type Stage =
       statement: ParsedStatement;
       prices: Map<string, PriceSeries>;
       dropNote: string | null;
-      fxNote: string | null;
+      cashNotes: string[];
     }
   | { kind: "applied"; summary: string }
   | { kind: "error"; message: string };
@@ -97,18 +97,25 @@ export function ImportTab({ portfolio, setPortfolio, staticData, settings }: Pro
         };
       });
 
-      let cashUsd = statement.cashBalance ?? 0;
-      let fxNote: string | null = null;
-      if (statement.cashBalance && statement.cashCurrency !== "USD") {
-        const converted = toUsd(statement.cashBalance, statement.cashCurrency, fx);
+      // itemized cash: convert every component (settled cash, cash funds…)
+      let cashUsd = 0;
+      const cashNotes: string[] = [];
+      for (const item of statement.cashItems) {
+        const converted = toUsd(item.amount, item.currency, fx);
         if (converted !== null) {
-          cashUsd = Math.round(converted * 100) / 100;
-          fxNote = `Cash of ${statement.cashBalance.toLocaleString("en-US")} ${statement.cashCurrency} converted to $${cashUsd.toLocaleString("en-US")} at ${fx!.usdPerUnit[statement.cashCurrency]} USD/${statement.cashCurrency} (rate as of ${fx!.asOf}). Adjust below if needed.`;
+          cashUsd += converted;
+          cashNotes.push(
+            item.currency === "USD"
+              ? `${item.description}: $${item.amount.toLocaleString("en-US")}`
+              : `${item.description}: ${item.amount.toLocaleString("en-US")} ${item.currency} → $${(Math.round(converted * 100) / 100).toLocaleString("en-US")} at ${fx!.usdPerUnit[item.currency]} USD/${item.currency} (rate as of ${fx!.asOf})`,
+          );
         } else {
-          cashUsd = 0;
-          fxNote = `Cash is in ${statement.cashCurrency}, but no exchange rate is available yet — enter the USD amount manually below.`;
+          cashNotes.push(
+            `${item.description}: ${item.amount.toLocaleString("en-US")} ${item.currency} — no exchange rate available, NOT included; add its USD value to the cash field manually.`,
+          );
         }
       }
+      cashUsd = Math.round(cashUsd * 100) / 100;
 
       setRows(reviewRows);
       setCash(cashUsd);
@@ -116,7 +123,7 @@ export function ImportTab({ portfolio, setPortfolio, staticData, settings }: Pro
         kind: "review",
         statement,
         prices,
-        fxNote,
+        cashNotes,
         dropNote:
           extracted.droppedPages.length > 0
             ? `Pages ${extracted.droppedPages.join(", ")} were omitted to fit the model's limit (they looked like transaction history, not holdings).`
@@ -208,7 +215,15 @@ export function ImportTab({ portfolio, setPortfolio, staticData, settings }: Pro
             Check every row — the AI can misread. Nothing is saved until you click apply.
           </div>
           {stage.dropNote && <div className="subtle" style={{ marginBottom: 8 }}>{stage.dropNote}</div>}
-          {stage.fxNote && <div className="subtle" style={{ marginBottom: 8 }}>💱 {stage.fxNote}</div>}
+          {stage.cashNotes.length > 0 && (
+            <div className="subtle" style={{ marginBottom: 8 }}>
+              💱 Cash components:
+              {stage.cashNotes.map((n) => (
+                <div key={n} style={{ marginLeft: 16 }}>{n}</div>
+              ))}
+              Total prefilled below — adjust if needed.
+            </div>
+          )}
           {stage.statement.warnings.length > 0 && (
             <div className="error-box">
               {stage.statement.warnings.map((w) => (

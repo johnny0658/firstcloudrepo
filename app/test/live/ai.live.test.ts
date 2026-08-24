@@ -76,9 +76,11 @@ describe.skipIf(!apiKey)("live statement parsing", () => {
       expect(bySymbol.AAPL?.quantity).toBe(40);
       expect(bySymbol.BND?.quantity).toBe(120);
       expect(bySymbol["BRK-B"]?.quantity).toBe(10);
-      // SPAXX is a money market: must land in cash, not holdings
+      // SPAXX is a money market: must land in cash items, not holdings —
+      // and the same $2,150 must not be double counted with the cash line
       expect(bySymbol.SPAXX).toBeUndefined();
-      expect(out.cashBalance).toBe(2150);
+      const totalUsdCash = out.cashItems.filter((c) => c.currency === "USD").reduce((a, c) => a + c.amount, 0);
+      expect(totalUsdCash).toBe(2150);
       expect(out.statementDate).toBe("2026-08-21");
     },
     LLM_TIMEOUT,
@@ -101,9 +103,9 @@ describe.skipIf(!apiKey)("live statement parsing", () => {
       // transaction-history traps: sold/cancelled tickers must not appear
       expect(bySymbol.NVDA).toBeUndefined();
       expect(bySymbol.MSFT).toBeUndefined();
-      // SGD cash fund: routed to cash with its currency
-      expect(out.cashBalance).toBe(4300);
-      expect(out.cashCurrency).toBe("SGD");
+      // SGD cash fund: itemized in its own currency
+      const totalSgd = out.cashItems.filter((c) => c.currency === "SGD").reduce((a, c) => a + c.amount, 0);
+      expect(totalSgd).toBe(4300);
     },
     LLM_TIMEOUT,
   );

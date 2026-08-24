@@ -160,7 +160,12 @@ export function buildLlmSummary(data: ReportData): Record<string, unknown> {
     totalValue: fmtMoney(data.totalValue),
     cash: fmtMoney(data.cash),
     holdings: [
-      ...top.map((h) => ({ symbol: h.symbol, name: h.name, value: fmtMoney(h.value), weight: fmtPct(h.weight) })),
+      ...top.map((h) => ({
+        symbol: h.symbol,
+        name: h.shares < 0 ? `${h.name} (SHORT position — profits when its price falls)` : h.name,
+        value: fmtMoney(h.value),
+        weight: fmtPct(h.weight),
+      })),
       ...(otherValue > 0 ? [{ symbol: "other", name: `${data.holdings.length - 10} smaller holdings`, value: fmtMoney(otherValue), weight: fmtPct(otherValue / data.totalValue) }] : []),
     ],
     risk: data.risk

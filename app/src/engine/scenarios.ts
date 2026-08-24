@@ -49,9 +49,11 @@ function replayReturn(series: PriceSeries, start: string, end: string): number |
 function factorReturn(reg: RegressionResult, ep: Episode): number {
   // Linear approximation: betas (estimated on monthly data) applied to the
   // episode's cumulative factor returns. Rough by design; labeled "estimated".
+  // Clamped at -100%: a security's price cannot fall below zero, but the
+  // linear model happily extrapolates past it for high-beta holdings.
   const f = ep.factorReturns;
   const { mktRF, smb, hml, mom } = reg.betas;
-  return (mktRF * f.MktRF + smb * f.SMB + hml * f.HML + mom * f.MOM) / 100;
+  return Math.max(-1, (mktRF * f.MktRF + smb * f.SMB + hml * f.HML + mom * f.MOM) / 100);
 }
 
 export function runEpisode(inputs: ScenarioInputs, ep: Episode): ScenarioResult {
@@ -71,7 +73,7 @@ export function runEpisode(inputs: ScenarioInputs, ep: Episode): ScenarioResult 
       ret = replayed;
     } else if (info?.type === "bond_etf") {
       method = "duration";
-      ret = (-durationFor(info) * ep.rateChangeBps) / 10000;
+      ret = Math.max(-1, (-durationFor(info) * ep.rateChangeBps) / 10000);
     } else {
       method = "factor";
       const reg = inputs.regressions.get(h.symbol);
@@ -118,12 +120,12 @@ export function runHypothetical(
     let ret: number;
     if (info?.type === "bond_etf") {
       method = "duration";
-      ret = (-durationFor(info) * rateShockBps) / 10000;
+      ret = Math.max(-1, (-durationFor(info) * rateShockBps) / 10000);
     } else {
       method = "factor";
       const reg = inputs.regressions.get(h.symbol);
       const beta = reg ? reg.betas.mktRF : 1.0;
-      ret = (beta * equityShockPct) / 100;
+      ret = Math.max(-1, (beta * equityShockPct) / 100);
     }
     impacts.push({ symbol: h.symbol, method, returnPct: ret, startValue, dollarPnL: startValue * ret });
   }

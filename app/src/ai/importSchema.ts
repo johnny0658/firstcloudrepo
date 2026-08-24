@@ -11,12 +11,18 @@ export interface ParsedHolding {
   assetType: "stock" | "etf" | "bond_fund" | "cash" | "other";
 }
 
+export interface CashItem {
+  amount: number; // positive, in its own currency
+  currency: string;
+  description: string;
+}
+
 export interface ParsedStatement {
   statementDate: string | null;
   broker: string | null;
   holdings: ParsedHolding[];
-  cashBalance: number | null;
-  cashCurrency: string; // ISO code, default USD
+  /** Itemized cash and cash-equivalents (settled cash, money-market funds…). */
+  cashItems: CashItem[];
   warnings: string[];
 }
 
@@ -59,6 +65,7 @@ export function validateStatement(raw: unknown): ParsedStatement {
     ? obj.warnings.filter((w): w is string => typeof w === "string").slice(0, 20)
     : [];
 
+  const cashItems: CashItem[] = [];
   const holdings: ParsedHolding[] = [];
   for (const row of obj.holdings) {
     if (typeof row !== "object" || row === null) continue;
@@ -71,7 +78,22 @@ export function validateStatement(raw: unknown): ParsedStatement {
       : "other";
 
     if (!symbol) continue;
-    if (assetType === "cash") continue; // cash rows belong in cashBalance
+    if (assetType === "cash") {
+      // a cash fund the model put among holdings anyway: keep the money —
+      // route it into cashItems instead of silently discarding it
+      const amount = coerceNumber(r.marketValue) ?? coerceNumber(r.quantity);
+      if (amount !== null && amount > 0) {
+        cashItems.push({
+          amount,
+          currency: normalizeCurrency(r.currency),
+          description:
+            (typeof r.description === "string" && r.description.trim()) ? r.description.slice(0, 80) : symbol,
+        });
+      } else {
+        warnings.push(`${symbol}: cash-equivalent row without a usable amount — dropped`);
+      }
+      continue;
+    }
     if ((quantity === null || quantity === 0) && (marketValue === null || marketValue === 0)) {
       warnings.push(`${symbol}: no quantity or value found — dropped`);
       continue;
@@ -102,8 +124,29 @@ export function validateStatement(raw: unknown): ParsedStatement {
     }
   }
 
-  const cashBalance = coerceNumber(obj.cashBalance);
-  if (cashBalance !== null && cashBalance < 0) {
+  if (Array.isArray(obj.cashBalances)) {
+    for (const row of obj.cashBalances.slice(0, 20)) {
+      if (typeof row !== "object" || row === null) continue;
+      const r = row as Record<string, unknown>;
+      const amount = coerceNumber(r.amount);
+      if (amount === null || amount === 0) continue;
+      if (amount < 0) {
+        warnings.push("Negative cash entry (margin debit) — skipped; not supported.");
+        continue;
+      }
+      cashItems.push({
+        amount,
+        currency: normalizeCurrency(r.currency),
+        description:
+          (typeof r.description === "string" && r.description.trim()) ? r.description.slice(0, 80) : "cash",
+      });
+    }
+  }
+  // legacy scalar shape (older prompt / other models): fold into the list
+  const legacyCash = coerceNumber(obj.cashBalance);
+  if (legacyCash !== null && legacyCash > 0 && cashItems.length === 0) {
+    cashItems.push({ amount: legacyCash, currency: normalizeCurrency(obj.cashCurrency), description: "cash" });
+  } else if (legacyCash !== null && legacyCash < 0) {
     warnings.push("Negative cash balance (margin debit) — treated as zero cash; not supported.");
   }
 
@@ -111,8 +154,7 @@ export function validateStatement(raw: unknown): ParsedStatement {
     statementDate,
     broker: typeof obj.broker === "string" ? obj.broker.slice(0, 80) : null,
     holdings,
-    cashBalance: cashBalance !== null && cashBalance > 0 ? cashBalance : null,
-    cashCurrency: normalizeCurrency(obj.cashCurrency),
+    cashItems,
     warnings,
   };
 }

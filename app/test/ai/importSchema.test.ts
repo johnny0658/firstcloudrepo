@@ -42,7 +42,7 @@ describe("validateStatement", () => {
     expect(out.holdings[1].symbol).toBe("VOO");
     expect(out.holdings[1].quantity).toBe(25.5);
     expect(out.holdings[1].marketValue).toBe(17900.25);
-    expect(out.cashBalance).toBe(1500);
+    expect(out.cashItems).toEqual([{ amount: 1500, currency: "USD", description: "cash" }]);
     expect(out.broker).toBe("Test Broker");
   });
 
@@ -74,22 +74,37 @@ describe("validateStatement", () => {
     });
     expect(out.holdings[0].currency).toBe("USD");
     expect(out.holdings[1].currency).toBe("USD");
-    expect(out.cashCurrency).toBe("SGD");
+    expect(out.cashItems).toEqual([{ amount: 2000, currency: "SGD", description: "cash" }]);
   });
 
-  it("clamps negative cash (margin debit) to null with a warning", () => {
+  it("itemizes cashBalances entries and skips negatives with a warning", () => {
+    const out = validateStatement({
+      holdings: [],
+      cashBalances: [
+        { amount: "8,881.29", currency: "SGD", description: "settled cash" },
+        { amount: 14249.96, currency: "sgd", description: "Fullerton SGD Cash Fund" },
+        { amount: -100, currency: "USD", description: "margin debit" },
+      ],
+    });
+    expect(out.cashItems).toEqual([
+      { amount: 8881.29, currency: "SGD", description: "settled cash" },
+      { amount: 14249.96, currency: "SGD", description: "Fullerton SGD Cash Fund" },
+    ]);
+    expect(out.warnings.some((w) => w.includes("margin debit"))).toBe(true);
+  });
+
+  it("clamps legacy negative cash (margin debit) with a warning", () => {
     const out = validateStatement({ holdings: [], cashBalance: -500 });
-    expect(out.cashBalance).toBeNull();
+    expect(out.cashItems).toEqual([]);
     expect(out.warnings.some((w) => w.includes("margin"))).toBe(true);
   });
 
-  it("routes cash-type rows out of holdings", () => {
+  it("routes cash-type holding rows into cashItems instead of dropping them", () => {
     const out = validateStatement({
       holdings: [{ symbol: "SPAXX", description: "Money market", quantity: 500, marketValue: 500, assetType: "cash" }],
-      cashBalance: 500,
     });
     expect(out.holdings).toHaveLength(0);
-    expect(out.cashBalance).toBe(500);
+    expect(out.cashItems).toEqual([{ amount: 500, currency: "USD", description: "Money market" }]);
   });
 
   it("warns about stale statements", () => {

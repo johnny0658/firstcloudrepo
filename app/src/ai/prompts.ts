@@ -16,8 +16,13 @@ export const IMPORT_SYSTEM_PROMPT = `You are a precise financial-statement parse
       "assetType": "stock" | "etf" | "bond_fund" | "cash" | "other"
     }
   ],
-  "cashBalance": number or null,  // total uninvested cash / money-market / cash-fund balance
-  "cashCurrency": string,         // ISO code of the cash balance, e.g. "USD", "SGD"
+  "cashBalances": [               // EVERY cash component as its own entry, never merged
+    {
+      "amount": number,           // positive amount in its own currency
+      "currency": string,         // ISO code, e.g. "USD", "SGD"
+      "description": string       // e.g. "settled cash", "Fullerton SGD Cash Fund"
+    }
+  ],
   "warnings": [string]            // anything ambiguous or that you had to guess
 }
 
@@ -25,10 +30,10 @@ Rules:
 - Include only CURRENT holdings/positions. Ignore transaction history, dividends paid, fees, and performance tables.
 - Never invent holdings that are not in the text. Never invent numbers.
 - Numbers must be plain json numbers (no currency symbols, no thousands separators).
-- Money-market funds, cash funds (e.g. "SGD Cash Fund"), and cash sweep balances belong in cashBalance (in their own currency via cashCurrency), not holdings.
+- Cash and cash equivalents go in cashBalances, itemized: the settled/uninvested cash balance is one entry, and EACH money-market or cash fund (e.g. "SGD Cash Fund", a sweep fund) is its own separate entry with its own currency. Never put them in holdings, never merge entries, and never count the same money twice — if the statement's stated cash balance already includes a listed sweep fund, report only the itemized entries.
 - Short positions are reported with a NEGATIVE quantity — do not drop or flip them.
 - If different amounts are in different currencies, use each row's currency field; note it in warnings.
-- If the document does not look like a financial statement, return {"statementDate":null,"broker":null,"holdings":[],"cashBalance":null,"cashCurrency":"USD","warnings":["not a financial statement"]}.`;
+- If the document does not look like a financial statement, return {"statementDate":null,"broker":null,"holdings":[],"cashBalances":[],"warnings":["not a financial statement"]}.`;
 
 export function buildImportUserPrompt(statementText: string): string {
   return `Parse this statement text into the json schema you were given.\n\n--- STATEMENT TEXT START ---\n${statementText}\n--- STATEMENT TEXT END ---`;
