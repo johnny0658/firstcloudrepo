@@ -38,6 +38,20 @@ export async function loadFactorTables(): Promise<{ ff3: FactorTable; mom: Facto
   return { ff3, mom };
 }
 
+export interface FxTable {
+  asOf: string;
+  usdPerUnit: Record<string, number>;
+}
+
+/** null when fx.json hasn't been generated yet (first refresh pending). */
+export async function loadFx(): Promise<FxTable | null> {
+  try {
+    return await getJson<FxTable>("fx.json");
+  } catch {
+    return null;
+  }
+}
+
 export async function loadEpisodes(): Promise<Episode[]> {
   const doc = await getJson<{ episodes: Episode[] }>("scenarios/episodes.json");
   return doc.episodes;

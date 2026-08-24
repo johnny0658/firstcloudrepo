@@ -54,12 +54,33 @@ describe("validateStatement", () => {
     expect(out.warnings.some((w) => w.includes("XYZ"))).toBe(true);
   });
 
-  it("drops short positions with a warning", () => {
+  it("keeps short positions (negative quantity) with an explanatory warning", () => {
     const out = validateStatement({
-      holdings: [{ symbol: "TSLA", description: "", quantity: -5, marketValue: null, assetType: "stock" }],
+      holdings: [{ symbol: "IGV", description: "iShares Tech-Software", quantity: -20, marketValue: null, assetType: "etf" }],
     });
-    expect(out.holdings).toHaveLength(0);
-    expect(out.warnings.some((w) => w.includes("short"))).toBe(true);
+    expect(out.holdings).toHaveLength(1);
+    expect(out.holdings[0].quantity).toBe(-20);
+    expect(out.warnings.some((w) => w.includes("short position"))).toBe(true);
+  });
+
+  it("parses currency fields and defaults to USD", () => {
+    const out = validateStatement({
+      holdings: [
+        { symbol: "GLD", description: "", quantity: 46.4, marketValue: null, currency: "usd", assetType: "etf" },
+        { symbol: "AAPL", description: "", quantity: 5, marketValue: 1150, assetType: "stock" },
+      ],
+      cashBalance: 2000,
+      cashCurrency: "sgd",
+    });
+    expect(out.holdings[0].currency).toBe("USD");
+    expect(out.holdings[1].currency).toBe("USD");
+    expect(out.cashCurrency).toBe("SGD");
+  });
+
+  it("clamps negative cash (margin debit) to null with a warning", () => {
+    const out = validateStatement({ holdings: [], cashBalance: -500 });
+    expect(out.cashBalance).toBeNull();
+    expect(out.warnings.some((w) => w.includes("margin"))).toBe(true);
   });
 
   it("routes cash-type rows out of holdings", () => {
@@ -103,6 +124,23 @@ describe("mergePortfolio", () => {
     const map = Object.fromEntries(out.holdings.map((h) => [h.symbol, h.shares]));
     expect(map).toEqual({ VOO: 15, BND: 50, AAPL: 8 });
     expect(out.cash).toBe(1200);
+  });
+
+  it("merge: shorts net against longs and zero-net rows disappear", () => {
+    const withShort = { holdings: [{ symbol: "IGV", shares: -20 }], cash: 0 };
+    const out = mergePortfolio(existing, withShort, "merge");
+    expect(out.holdings.find((h) => h.symbol === "IGV")?.shares).toBe(-20);
+    const closedOut = mergePortfolio(
+      { holdings: [{ symbol: "IGV", shares: 20 }], cash: 0 },
+      withShort,
+      "merge",
+    );
+    expect(closedOut.holdings.find((h) => h.symbol === "IGV")).toBeUndefined();
+  });
+
+  it("replace: keeps short rows", () => {
+    const out = mergePortfolio(existing, { holdings: [{ symbol: "IGV", shares: -20 }], cash: 0 }, "replace");
+    expect(out.holdings).toEqual([{ symbol: "IGV", shares: -20 }]);
   });
 });
 

@@ -59,7 +59,7 @@ export function runEpisode(inputs: ScenarioInputs, ep: Episode): ScenarioResult 
 
   for (const h of inputs.portfolio.holdings) {
     const series = inputs.prices.get(h.symbol);
-    if (!series || h.shares <= 0) continue;
+    if (!series || h.shares === 0) continue;
     const info = inputs.tickerInfo.get(h.symbol);
     const startValue = h.shares * lastClose(series);
 
@@ -110,7 +110,7 @@ export function runHypothetical(
 
   for (const h of inputs.portfolio.holdings) {
     const series = inputs.prices.get(h.symbol);
-    if (!series || h.shares <= 0) continue;
+    if (!series || h.shares === 0) continue;
     const info = inputs.tickerInfo.get(h.symbol);
     const startValue = h.shares * lastClose(series);
 

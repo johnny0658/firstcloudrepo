@@ -451,6 +451,26 @@
    "symbol": "VNQ",
    "name": "Vanguard Real Estate",
    "type": "equity_etf"
+  },
+  {
+   "symbol": "IGV",
+   "name": "iShares Expanded Tech-Software ETF",
+   "type": "equity_etf"
+  },
+  {
+   "symbol": "GRID",
+   "name": "First Trust Nasdaq Clean Edge Smart Grid ETF",
+   "type": "equity_etf"
+  },
+  {
+   "symbol": "ROBO",
+   "name": "ROBO Global Robotics & Automation ETF",
+   "type": "equity_etf"
+  },
+  {
+   "symbol": "TCHI",
+   "name": "iShares MSCI China Multisector Tech ETF",
+   "type": "equity_etf"
   }
  ]
 }

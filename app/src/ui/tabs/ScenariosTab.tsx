@@ -102,6 +102,17 @@ export function ScenariosTab({ portfolio, staticData, prices }: Props) {
   );
 
   if (!staticData || !prices) return <div className="card">Loading…</div>;
+  if (analytics && analytics.shortsTooLarge)
+    return (
+      <div className="card">
+        <div className="error-box">
+          Your short positions are as large as (or larger than) your long holdings at some point in the last ten
+          years, so portfolio return math breaks down and this analysis can't run. Reduce the short sizes to
+          analyze the rest.
+        </div>
+      </div>
+    );
+
 
   return (
     <>

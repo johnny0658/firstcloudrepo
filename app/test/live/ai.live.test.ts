@@ -95,11 +95,15 @@ describe.skipIf(!apiKey)("live statement parsing", () => {
       expect(bySymbol.VTI?.quantity).toBe(52);
       expect(bySymbol.SCHD?.quantity).toBe(120);
       expect(bySymbol.QQQ?.quantity).toBe(9);
+      // the short position must survive with its negative quantity
+      expect(bySymbol.IGV?.quantity).toBe(-18);
+      expect(out.warnings.some((w) => w.includes("short position"))).toBe(true);
       // transaction-history traps: sold/cancelled tickers must not appear
       expect(bySymbol.NVDA).toBeUndefined();
       expect(bySymbol.MSFT).toBeUndefined();
-      // core cash position
-      expect(out.cashBalance).toBe(3200);
+      // SGD cash fund: routed to cash with its currency
+      expect(out.cashBalance).toBe(4300);
+      expect(out.cashCurrency).toBe("SGD");
     },
     LLM_TIMEOUT,
   );

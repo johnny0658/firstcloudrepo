@@ -50,6 +50,9 @@ export function usePrices(symbols: string[]): Map<string, PriceSeries> | null {
 
 export interface PortfolioAnalytics {
   valueSeries: { dates: string[]; values: number[] };
+  /** True when shorts drove the historical portfolio value to zero or below —
+   * return math breaks down there, so analytics tabs must refuse to render. */
+  shortsTooLarge: boolean;
   dailyReturns: ReturnSeries;
   monthlyReturns: ReturnSeries;
   regressions: Map<string, RegressionResult | null>;
@@ -67,7 +70,8 @@ export function usePortfolioAnalytics(
   return useMemo(() => {
     if (!prices || !staticData) return null;
     const series = portfolioValueSeries(portfolio, prices);
-    const daily = valueSeriesToReturns(series);
+    const shortsTooLarge = series.values.some((v) => v <= 0);
+    const daily = shortsTooLarge ? { labels: [], returns: [] } : valueSeriesToReturns(series);
     const monthly = toMonthly(daily);
 
     const regressions = new Map<string, RegressionResult | null>();
@@ -84,6 +88,7 @@ export function usePortfolioAnalytics(
     }
     return {
       valueSeries: series,
+      shortsTooLarge,
       dailyReturns: daily,
       monthlyReturns: monthly,
       regressions,

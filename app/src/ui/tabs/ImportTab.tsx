@@ -3,7 +3,7 @@ import { aiErrorMessage, chatJson } from "../../ai/client";
 import { validateStatement, type ParsedStatement } from "../../ai/importSchema";
 import { buildImportUserPrompt, IMPORT_SYSTEM_PROMPT } from "../../ai/prompts";
 import type { AiSettings } from "../../ai/settings";
-import { loadPrices } from "../../data/loader";
+import { loadFx, loadPrices, type FxTable } from "../../data/loader";
 import { lastClose } from "../../engine/returns";
 import type { Portfolio, PriceSeries } from "../../engine/types";
 import { mergePortfolio, type ApplyMode } from "../../state/merge";
@@ -17,9 +17,22 @@ type Stage =
   | { kind: "idle" }
   | { kind: "extracting" }
   | { kind: "asking" }
-  | { kind: "review"; statement: ParsedStatement; prices: Map<string, PriceSeries>; dropNote: string | null }
+  | {
+      kind: "review";
+      statement: ParsedStatement;
+      prices: Map<string, PriceSeries>;
+      dropNote: string | null;
+      fxNote: string | null;
+    }
   | { kind: "applied"; summary: string }
   | { kind: "error"; message: string };
+
+/** USD value of an amount in `currency`, or null when no rate is available. */
+function toUsd(amount: number, currency: string, fx: FxTable | null): number | null {
+  if (currency === "USD") return amount;
+  const rate = fx?.usdPerUnit[currency];
+  return rate ? amount * rate : null;
+}
 
 interface ReviewRow {
   symbol: string;
@@ -56,7 +69,7 @@ export function ImportTab({ portfolio, setPortfolio, staticData, settings }: Pro
       ]);
       const statement = validateStatement(raw);
       const symbols = statement.holdings.map((h) => h.symbol);
-      const prices = await loadPrices(symbols);
+      const [prices, fx] = await Promise.all([loadPrices(symbols), loadFx()]);
 
       const reviewRows: ReviewRow[] = statement.holdings.map((h) => {
         const series = prices.get(h.symbol);
@@ -64,8 +77,15 @@ export function ImportTab({ portfolio, setPortfolio, staticData, settings }: Pro
         let shares = h.quantity;
         let fromValue = false;
         if (shares === null && h.marketValue !== null && series) {
-          shares = h.marketValue / lastClose(series);
-          fromValue = true;
+          const usdValue = toUsd(h.marketValue, h.currency, fx);
+          if (usdValue !== null) {
+            shares = usdValue / lastClose(series);
+            fromValue = true;
+          } else {
+            statement.warnings.push(
+              `${h.symbol}: value is in ${h.currency} but no exchange rate is available — enter shares manually.`,
+            );
+          }
         }
         return {
           symbol: h.symbol,
@@ -73,15 +93,30 @@ export function ImportTab({ portfolio, setPortfolio, staticData, settings }: Pro
           shares,
           fromValue,
           tracked,
-          included: tracked && shares !== null && shares > 0,
+          included: tracked && shares !== null && shares !== 0,
         };
       });
+
+      let cashUsd = statement.cashBalance ?? 0;
+      let fxNote: string | null = null;
+      if (statement.cashBalance && statement.cashCurrency !== "USD") {
+        const converted = toUsd(statement.cashBalance, statement.cashCurrency, fx);
+        if (converted !== null) {
+          cashUsd = Math.round(converted * 100) / 100;
+          fxNote = `Cash of ${statement.cashBalance.toLocaleString("en-US")} ${statement.cashCurrency} converted to $${cashUsd.toLocaleString("en-US")} at ${fx!.usdPerUnit[statement.cashCurrency]} USD/${statement.cashCurrency} (rate as of ${fx!.asOf}). Adjust below if needed.`;
+        } else {
+          cashUsd = 0;
+          fxNote = `Cash is in ${statement.cashCurrency}, but no exchange rate is available yet — enter the USD amount manually below.`;
+        }
+      }
+
       setRows(reviewRows);
-      setCash(statement.cashBalance ?? 0);
+      setCash(cashUsd);
       setStage({
         kind: "review",
         statement,
         prices,
+        fxNote,
         dropNote:
           extracted.droppedPages.length > 0
             ? `Pages ${extracted.droppedPages.join(", ")} were omitted to fit the model's limit (they looked like transaction history, not holdings).`
@@ -92,7 +127,7 @@ export function ImportTab({ portfolio, setPortfolio, staticData, settings }: Pro
     }
   };
 
-  const included = rows.filter((r) => r.included && r.shares !== null && r.shares > 0);
+  const included = rows.filter((r) => r.included && r.shares !== null && r.shares !== 0);
   const existingBySymbol = useMemo(
     () => new Map(portfolio.holdings.map((h) => [h.symbol, h.shares])),
     [portfolio],
@@ -173,6 +208,7 @@ export function ImportTab({ portfolio, setPortfolio, staticData, settings }: Pro
             Check every row — the AI can misread. Nothing is saved until you click apply.
           </div>
           {stage.dropNote && <div className="subtle" style={{ marginBottom: 8 }}>{stage.dropNote}</div>}
+          {stage.fxNote && <div className="subtle" style={{ marginBottom: 8 }}>💱 {stage.fxNote}</div>}
           {stage.statement.warnings.length > 0 && (
             <div className="error-box">
               {stage.statement.warnings.map((w) => (
@@ -204,12 +240,16 @@ export function ImportTab({ portfolio, setPortfolio, staticData, settings }: Pro
                       }
                     />
                   </td>
-                  <td>{r.symbol}</td>
+                  <td>
+                    {r.symbol}
+                    {r.shares !== null && r.shares < 0 && (
+                      <span className="badge est" style={{ marginLeft: 6 }}>short</span>
+                    )}
+                  </td>
                   <td className="subtle">{r.description}</td>
                   <td className="num">
                     <input
                       type="number"
-                      min="0"
                       step="any"
                       value={r.shares ?? ""}
                       disabled={!r.tracked}
@@ -218,7 +258,7 @@ export function ImportTab({ portfolio, setPortfolio, staticData, settings }: Pro
                         const v = parseFloat(e.target.value);
                         setRows(
                           rows.map((x, j) =>
-                            j === i ? { ...x, shares: Number.isFinite(v) && v >= 0 ? v : null } : x,
+                            j === i ? { ...x, shares: Number.isFinite(v) ? v : null } : x,
                           ),
                         );
                       }}

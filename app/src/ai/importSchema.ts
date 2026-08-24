@@ -5,8 +5,9 @@
 export interface ParsedHolding {
   symbol: string;
   description: string;
-  quantity: number | null;
+  quantity: number | null; // negative = short position
   marketValue: number | null;
+  currency: string; // ISO code of marketValue, default USD
   assetType: "stock" | "etf" | "bond_fund" | "cash" | "other";
 }
 
@@ -15,7 +16,14 @@ export interface ParsedStatement {
   broker: string | null;
   holdings: ParsedHolding[];
   cashBalance: number | null;
+  cashCurrency: string; // ISO code, default USD
   warnings: string[];
+}
+
+export function normalizeCurrency(v: unknown): string {
+  if (typeof v !== "string") return "USD";
+  const c = v.trim().toUpperCase();
+  return /^[A-Z]{3}$/.test(c) ? c : "USD";
 }
 
 const ASSET_TYPES = new Set(["stock", "etf", "bond_fund", "cash", "other"]);
@@ -64,19 +72,19 @@ export function validateStatement(raw: unknown): ParsedStatement {
 
     if (!symbol) continue;
     if (assetType === "cash") continue; // cash rows belong in cashBalance
-    if (quantity === null && marketValue === null) {
+    if ((quantity === null || quantity === 0) && (marketValue === null || marketValue === 0)) {
       warnings.push(`${symbol}: no quantity or value found — dropped`);
       continue;
     }
-    if ((quantity ?? 0) < 0 || (marketValue ?? 0) < 0) {
-      warnings.push(`${symbol}: short/negative position — not supported, dropped`);
-      continue;
+    if ((quantity ?? 0) < 0) {
+      warnings.push(`${symbol}: short position — it profits when the price falls and reduces your portfolio value`);
     }
     holdings.push({
       symbol,
       description: typeof r.description === "string" ? r.description.slice(0, 120) : "",
       quantity,
       marketValue,
+      currency: normalizeCurrency(r.currency),
       assetType,
     });
   }
@@ -94,11 +102,17 @@ export function validateStatement(raw: unknown): ParsedStatement {
     }
   }
 
+  const cashBalance = coerceNumber(obj.cashBalance);
+  if (cashBalance !== null && cashBalance < 0) {
+    warnings.push("Negative cash balance (margin debit) — treated as zero cash; not supported.");
+  }
+
   return {
     statementDate,
     broker: typeof obj.broker === "string" ? obj.broker.slice(0, 80) : null,
     holdings,
-    cashBalance: Math.max(0, coerceNumber(obj.cashBalance) ?? 0) || null,
+    cashBalance: cashBalance !== null && cashBalance > 0 ? cashBalance : null,
+    cashCurrency: normalizeCurrency(obj.cashCurrency),
     warnings,
   };
 }

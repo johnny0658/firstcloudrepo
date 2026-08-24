@@ -53,7 +53,7 @@ export function portfolioValueSeries(
   portfolio: Portfolio,
   prices: Map<string, PriceSeries>,
 ): { dates: string[]; values: number[] } {
-  const held = portfolio.holdings.filter((h) => h.shares > 0 && prices.has(h.symbol));
+  const held = portfolio.holdings.filter((h) => h.shares !== 0 && prices.has(h.symbol));
   if (held.length === 0) return { dates: [], values: [] };
 
   const dates = intersectSorted(held.map((h) => new Set(prices.get(h.symbol)!.dates)));

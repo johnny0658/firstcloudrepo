@@ -38,8 +38,13 @@ export function PortfolioTab({ portfolio, setPortfolio, staticData, prices }: Pr
   const addHolding = () => {
     setMessage(null);
     const qty = parseFloat(amount);
-    if (!query || !Number.isFinite(qty) || qty <= 0) {
-      setMessage("Enter a ticker and a positive amount.");
+    const valid = mode === "shares" ? Number.isFinite(qty) && qty !== 0 : Number.isFinite(qty) && qty > 0;
+    if (!query || !valid) {
+      setMessage(
+        mode === "shares"
+          ? "Enter a ticker and a non-zero share count (negative = short position)."
+          : "Enter a ticker and a positive dollar amount.",
+      );
       return;
     }
     if (staticData && !staticData.tickerInfo.has(query)) {
@@ -59,9 +64,11 @@ export function PortfolioTab({ portfolio, setPortfolio, staticData, prices }: Pr
       shares = qty / close;
     }
     const existing = portfolio.holdings.find((h) => h.symbol === query);
-    const holdings = existing
-      ? portfolio.holdings.map((h) => (h.symbol === query ? { ...h, shares: h.shares + shares } : h))
-      : [...portfolio.holdings, { symbol: query, shares }];
+    const holdings = (
+      existing
+        ? portfolio.holdings.map((h) => (h.symbol === query ? { ...h, shares: h.shares + shares } : h))
+        : [...portfolio.holdings, { symbol: query, shares }]
+    ).filter((h) => Math.abs(h.shares) > 1e-9);
     setPortfolio({ ...portfolio, holdings });
     setSymbol("");
     setAmount("");
@@ -120,10 +127,9 @@ export function PortfolioTab({ portfolio, setPortfolio, staticData, prices }: Pr
             </datalist>
           </label>
           <label>
-            {mode === "shares" ? "Shares" : "Dollar amount"}
+            {mode === "shares" ? "Shares (negative = short)" : "Dollar amount"}
             <input
               type="number"
-              min="0"
               step="any"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
@@ -207,7 +213,10 @@ export function PortfolioTab({ portfolio, setPortfolio, staticData, prices }: Pr
             <tbody>
               {rows.map((r) => (
                 <tr key={r.symbol}>
-                  <td>{r.symbol}</td>
+                  <td>
+                    {r.symbol}
+                    {r.shares < 0 && <span className="badge est" style={{ marginLeft: 6 }}>short</span>}
+                  </td>
                   <td className="subtle">{r.name}</td>
                   <td className="num">{r.shares.toLocaleString("en-US", { maximumFractionDigits: 4 })}</td>
                   <td className="num">{r.value === null ? "…" : fmtMoneyFull(r.value)}</td>

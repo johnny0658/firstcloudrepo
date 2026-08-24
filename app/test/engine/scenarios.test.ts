@@ -78,6 +78,26 @@ describe("scenarios", () => {
     expect(result.holdings[0].returnPct).toBeCloseTo(0.1, 10);
   });
 
+  it("short positions gain when the market falls", () => {
+    const prices = new Map([["SHRT", mkSeries("SHRT", ["2024-01-02", "2025-01-02"], [100, 100])]]);
+    const result = runHypothetical(
+      {
+        portfolio: { holdings: [{ symbol: "SHRT", shares: -10 }], cash: 2000 },
+        prices,
+        tickerInfo: new Map<string, TickerInfo>([["SHRT", { symbol: "SHRT", name: "", type: "equity_etf" }]]),
+        regressions: new Map([["SHRT", unitReg]]),
+      },
+      -20,
+      0,
+    );
+    const short = result.holdings.find((h) => h.symbol === "SHRT")!;
+    expect(short.startValue).toBeCloseTo(-1000, 10); // -10 shares x $100
+    expect(short.returnPct).toBeCloseTo(-0.2, 10); // the security falls 20%...
+    expect(short.dollarPnL).toBeCloseTo(200, 10); // ...so the short GAINS $200
+    expect(result.portfolioPnL).toBeCloseTo(200, 10);
+    expect(result.startValue).toBeCloseTo(1000, 10); // net: 2000 cash - 1000 short
+  });
+
   it("hypothetical shock: beta-scaled equity + duration-scaled bonds + flat cash", () => {
     const prices = new Map([
       ["EQ", mkSeries("EQ", ["2024-01-02", "2025-01-02"], [100, 100])],

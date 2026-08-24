@@ -38,6 +38,9 @@ jobs:
         if: ${{ !inputs.ticker }}
         working-directory: pipeline
         run: python fetch_factors.py
+      - name: Fetch FX rates
+        working-directory: pipeline
+        run: python fetch_fx.py
       - name: Compute scenario episodes
         working-directory: pipeline
         run: python compute_episodes.py
