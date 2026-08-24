@@ -32,5 +32,7 @@ function dataPlugin(): Plugin {
 
 export default defineConfig({
   base: "/firstcloudrepo/",
+  // es2022: pdfjs-dist ships ESM with top-level await, above Vite's default target
+  build: { target: "es2022" },
   plugins: [react(), dataPlugin()],
 });

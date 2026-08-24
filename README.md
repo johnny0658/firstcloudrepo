@@ -52,6 +52,26 @@ new one:
 - **Risk** — annualized volatility, Sharpe, max drawdown, monthly VaR/CVaR,
   correlation heatmap.
 
+## AI features (bring your own key)
+
+Two optional features use an LLM through **your own API key** — DeepSeek by
+default, or any OpenAI-compatible provider (configurable base URL + model in
+the app). The key is stored unencrypted in your browser's localStorage (or
+session-only via a checkbox) and requests go straight from your browser to
+the provider — this site has no servers.
+
+- **Import tab** — upload a text-based PDF brokerage statement. The PDF is
+  read on your device (pdf.js); its text is sent to the LLM, which returns a
+  strict JSON parse that is validated locally and shown in an editable
+  review screen before anything is applied (Replace or Merge). Privacy note:
+  the statement text is sent to the provider you configure. Scanned/image
+  PDFs are not supported.
+- **Report tab** — generates a downloadable, self-contained HTML portfolio
+  review (print it to PDF from your browser). Every figure is computed
+  locally by the same engine as the tabs; the LLM writes only the narrative
+  and is instructed to quote the provided figures verbatim. The report is
+  clearly labeled AI-assisted and is not financial advice.
+
 ## Development
 
 ```bash
