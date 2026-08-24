@@ -13,7 +13,7 @@ export interface Episode {
   notes: string;
 }
 
-export type ScenarioMethod = "replay" | "factor" | "duration" | "cash";
+export type ScenarioMethod = "replay" | "factor" | "duration" | "assumption" | "cash";
 
 export interface HoldingImpact {
   symbol: string;

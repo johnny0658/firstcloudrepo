@@ -56,6 +56,11 @@ function ReportDoc({ data, narrative }: { data: ReportData; narrative: Narrative
     value: result.portfolioPnL,
     display: `${fmtMoney(result.portfolioPnL)} (${fmtSignedPct(result.portfolioReturnPct)})`,
   }));
+  const speculativeBars = data.speculative.map(({ scenario, result }) => ({
+    label: scenario.name.split("&")[0].trim().slice(0, 12),
+    value: result.portfolioPnL,
+    display: `${fmtMoney(result.portfolioPnL)} (${fmtSignedPct(result.portfolioReturnPct)})`,
+  }));
 
   return (
     <>
@@ -128,6 +133,17 @@ function ReportDoc({ data, narrative }: { data: ReportData; narrative: Narrative
         <section>
           <h2>Historical stress tests (portfolio impact)</h2>
           <HBarChart data={episodeBars} />
+        </section>
+      )}
+
+      {speculativeBars.length > 0 && (
+        <section>
+          <h2>Forward-looking scenarios (speculative)</h2>
+          <HBarChart data={speculativeBars} />
+          <p className="meta">
+            What-if worlds built from authored category-level assumptions (shown in the app's Scenarios tab) — not
+            predictions, and unlike the historical stress tests above, none of this has happened.
+          </p>
         </section>
       )}
 

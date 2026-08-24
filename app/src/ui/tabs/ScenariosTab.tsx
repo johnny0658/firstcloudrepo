@@ -1,5 +1,10 @@
 import { useMemo, useState } from "react";
 import { runEpisode, runHypothetical, type ScenarioResult } from "../../engine/scenarios";
+import {
+  CATEGORY_LABELS,
+  runSpeculative,
+  SPECULATIVE_SCENARIOS,
+} from "../../engine/speculative";
 import type { Portfolio, PriceSeries } from "../../engine/types";
 import { HBarChart } from "../charts/HBarChart";
 import { fmtMoney, fmtSignedPct } from "../format";
@@ -16,6 +21,7 @@ const METHOD_LABEL: Record<string, string> = {
   replay: "actual history",
   factor: "estimated (factor model)",
   duration: "estimated (rate duration)",
+  assumption: "scenario assumption",
   cash: "cash",
 };
 
@@ -76,6 +82,7 @@ function ResultView({ result }: { result: ScenarioResult }) {
 export function ScenariosTab({ portfolio, staticData, prices }: Props) {
   const analytics = usePortfolioAnalytics(portfolio, prices, staticData);
   const [episodeId, setEpisodeId] = useState<string | null>(null);
+  const [specId, setSpecId] = useState(SPECULATIVE_SCENARIOS[0].id);
   const [equityShock, setEquityShock] = useState(-20);
   const [rateShock, setRateShock] = useState(100);
 
@@ -99,6 +106,11 @@ export function ScenariosTab({ portfolio, staticData, prices }: Props) {
   const hypoResult = useMemo(
     () => (inputs ? runHypothetical(inputs, equityShock, rateShock) : null),
     [inputs, equityShock, rateShock],
+  );
+  const spec = SPECULATIVE_SCENARIOS.find((s) => s.id === specId) ?? SPECULATIVE_SCENARIOS[0];
+  const specResult = useMemo(
+    () => (prices && staticData ? runSpeculative({ portfolio, prices, tickerInfo: staticData.tickerInfo }, spec) : null),
+    [portfolio, prices, staticData, spec],
   );
 
   if (!staticData || !prices) return <div className="card">Loading…</div>;
@@ -163,6 +175,45 @@ export function ScenariosTab({ portfolio, staticData, prices }: Props) {
         <div className="subtle" style={{ marginTop: 10 }}>
           Holdings whose price history covers the episode use their actual returns; younger holdings are estimated from
           their factor exposures (equities) or rate duration (bond funds), marked "estimated".
+        </div>
+      </div>
+
+      <div className="card">
+        <h2>Forward-looking scenarios <span className="badge est">speculative</span></h2>
+        <div className="controls">
+          <label>
+            Scenario
+            <select value={spec.id} onChange={(e) => setSpecId(e.target.value)}>
+              {SPECULATIVE_SCENARIOS.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="subtle" style={{ marginBottom: 12 }}>{spec.story}</div>
+        {specResult ? <ResultView result={specResult} /> : <div className="empty-hint">Computing…</div>}
+        {spec.cashNote && <div className="subtle" style={{ marginTop: 8 }}>⚠ {spec.cashNote}</div>}
+        <h3>Assumptions behind this scenario</h3>
+        <table className="data">
+          <tbody>
+            {Object.entries(spec.shocks).map(([cat, pct]) => (
+              <tr key={cat}>
+                <td>{CATEGORY_LABELS[cat as keyof typeof CATEGORY_LABELS]}</td>
+                <td className="num">{pct > 0 ? "+" : ""}{pct}%</td>
+              </tr>
+            ))}
+            <tr>
+              <td>Interest rates</td>
+              <td className="num">{spec.rateChangeBps > 0 ? "+" : ""}{spec.rateChangeBps} bps</td>
+            </tr>
+          </tbody>
+        </table>
+        <div className="subtle" style={{ marginTop: 8 }}>
+          These are authored what-if assumptions, not predictions — nobody knows whether or how such a world would
+          unfold. Bond funds respond to the rate assumption via duration; each other holding takes its category's
+          shock (a short position moves opposite, as it should).
         </div>
       </div>
 

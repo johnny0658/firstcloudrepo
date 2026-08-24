@@ -3,37 +3,44 @@
   {
    "symbol": "AAPL",
    "name": "Apple",
-   "type": "stock"
+   "type": "stock",
+   "category": "us_tech"
   },
   {
    "symbol": "MSFT",
    "name": "Microsoft",
-   "type": "stock"
+   "type": "stock",
+   "category": "us_tech"
   },
   {
    "symbol": "NVDA",
    "name": "NVIDIA",
-   "type": "stock"
+   "type": "stock",
+   "category": "us_tech"
   },
   {
    "symbol": "GOOGL",
    "name": "Alphabet Class A",
-   "type": "stock"
+   "type": "stock",
+   "category": "us_tech"
   },
   {
    "symbol": "AMZN",
    "name": "Amazon",
-   "type": "stock"
+   "type": "stock",
+   "category": "us_tech"
   },
   {
    "symbol": "META",
    "name": "Meta Platforms",
-   "type": "stock"
+   "type": "stock",
+   "category": "us_tech"
   },
   {
    "symbol": "TSLA",
    "name": "Tesla",
-   "type": "stock"
+   "type": "stock",
+   "category": "us_tech"
   },
   {
    "symbol": "BRK-B",
@@ -43,7 +50,8 @@
   {
    "symbol": "AVGO",
    "name": "Broadcom",
-   "type": "stock"
+   "type": "stock",
+   "category": "us_tech"
   },
   {
    "symbol": "JPM",
@@ -118,32 +126,38 @@
   {
    "symbol": "NFLX",
    "name": "Netflix",
-   "type": "stock"
+   "type": "stock",
+   "category": "us_tech"
   },
   {
    "symbol": "AMD",
    "name": "AMD",
-   "type": "stock"
+   "type": "stock",
+   "category": "us_tech"
   },
   {
    "symbol": "INTC",
    "name": "Intel",
-   "type": "stock"
+   "type": "stock",
+   "category": "us_tech"
   },
   {
    "symbol": "CRM",
    "name": "Salesforce",
-   "type": "stock"
+   "type": "stock",
+   "category": "us_tech"
   },
   {
    "symbol": "ORCL",
    "name": "Oracle",
-   "type": "stock"
+   "type": "stock",
+   "category": "us_tech"
   },
   {
    "symbol": "ADBE",
    "name": "Adobe",
-   "type": "stock"
+   "type": "stock",
+   "category": "us_tech"
   },
   {
    "symbol": "PFE",
@@ -198,17 +212,20 @@
   {
    "symbol": "CSCO",
    "name": "Cisco",
-   "type": "stock"
+   "type": "stock",
+   "category": "us_tech"
   },
   {
    "symbol": "QCOM",
    "name": "Qualcomm",
-   "type": "stock"
+   "type": "stock",
+   "category": "us_tech"
   },
   {
    "symbol": "TXN",
    "name": "Texas Instruments",
-   "type": "stock"
+   "type": "stock",
+   "category": "us_tech"
   },
   {
    "symbol": "NKE",
@@ -238,17 +255,20 @@
   {
    "symbol": "UBER",
    "name": "Uber",
-   "type": "stock"
+   "type": "stock",
+   "category": "us_tech"
   },
   {
    "symbol": "PLTR",
    "name": "Palantir",
-   "type": "stock"
+   "type": "stock",
+   "category": "us_tech"
   },
   {
    "symbol": "PYPL",
    "name": "PayPal",
-   "type": "stock"
+   "type": "stock",
+   "category": "us_tech"
   },
   {
    "symbol": "VOO",
@@ -273,12 +293,14 @@
   {
    "symbol": "QQQ",
    "name": "Invesco Nasdaq-100",
-   "type": "equity_etf"
+   "type": "equity_etf",
+   "category": "us_tech"
   },
   {
    "symbol": "IWM",
    "name": "iShares Russell 2000",
-   "type": "equity_etf"
+   "type": "equity_etf",
+   "category": "us_small_value"
   },
   {
    "symbol": "DIA",
@@ -288,27 +310,32 @@
   {
    "symbol": "VXUS",
    "name": "Vanguard Total Intl (ex-US)",
-   "type": "equity_etf"
+   "type": "equity_etf",
+   "category": "intl_dev"
   },
   {
    "symbol": "VEA",
    "name": "Vanguard Developed Markets",
-   "type": "equity_etf"
+   "type": "equity_etf",
+   "category": "intl_dev"
   },
   {
    "symbol": "VWO",
    "name": "Vanguard Emerging Markets",
-   "type": "equity_etf"
+   "type": "equity_etf",
+   "category": "em_china"
   },
   {
    "symbol": "SCHD",
    "name": "Schwab US Dividend Equity",
-   "type": "equity_etf"
+   "type": "equity_etf",
+   "category": "us_small_value"
   },
   {
    "symbol": "VIG",
    "name": "Vanguard Dividend Appreciation",
-   "type": "equity_etf"
+   "type": "equity_etf",
+   "category": "us_small_value"
   },
   {
    "symbol": "VUG",
@@ -318,17 +345,20 @@
   {
    "symbol": "VTV",
    "name": "Vanguard Value",
-   "type": "equity_etf"
+   "type": "equity_etf",
+   "category": "us_small_value"
   },
   {
    "symbol": "VGT",
    "name": "Vanguard Information Technology",
-   "type": "equity_etf"
+   "type": "equity_etf",
+   "category": "us_tech"
   },
   {
    "symbol": "XLK",
    "name": "Technology Select SPDR",
-   "type": "equity_etf"
+   "type": "equity_etf",
+   "category": "us_tech"
   },
   {
    "symbol": "XLF",
@@ -455,22 +485,26 @@
   {
    "symbol": "IGV",
    "name": "iShares Expanded Tech-Software ETF",
-   "type": "equity_etf"
+   "type": "equity_etf",
+   "category": "us_tech"
   },
   {
    "symbol": "GRID",
    "name": "First Trust Nasdaq Clean Edge Smart Grid ETF",
-   "type": "equity_etf"
+   "type": "equity_etf",
+   "category": "robotics"
   },
   {
    "symbol": "ROBO",
    "name": "ROBO Global Robotics & Automation ETF",
-   "type": "equity_etf"
+   "type": "equity_etf",
+   "category": "robotics"
   },
   {
    "symbol": "TCHI",
    "name": "iShares MSCI China Multisector Tech ETF",
-   "type": "equity_etf"
+   "type": "equity_etf",
+   "category": "em_china"
   }
  ]
 }

@@ -36,6 +36,16 @@ const data: ReportData = {
       },
     },
   ],
+  speculative: [
+    {
+      scenario: {
+        id: "ai_boom", name: "AI Succeeds", story: "AI delivers.",
+        shocks: { us_broad: 25, us_tech: 80, robotics: 60, em_china: 10, intl_dev: 10, us_small_value: 5, gold: -10 },
+        rateChangeBps: 150, cashNote: null,
+      },
+      result: { portfolioReturnPct: 0.31, portfolioPnL: 3100, startValue: 10000, holdings: [] },
+    },
+  ],
   hypothetical: { portfolioReturnPct: -0.15, portfolioPnL: -1500, startValue: 10000, holdings: [] },
   projection: {
     years: [0, 1, 2], p10: [10000, 10200, 10500], p25: [10000, 10600, 11200],
@@ -84,7 +94,8 @@ describe("renderReportHtml", () => {
     expect(html).toContain("Test Portfolio Review");
     expect(html).toContain("Your portfolio is worth $10.0K.");
     expect(html).toContain("VOO");
-    expect((html.match(/<svg/g) ?? []).length).toBeGreaterThanOrEqual(2); // episode bars + fan chart
+    expect((html.match(/<svg/g) ?? []).length).toBeGreaterThanOrEqual(3); // episode + speculative bars + fan chart
+    expect(html).toContain("Forward-looking scenarios (speculative)");
     expect(html).toContain("not financial advice");
     expect(html).toContain("deepseek-chat");
     expect(html).toContain("Key takeaways");
@@ -104,7 +115,7 @@ describe("renderReportHtml", () => {
   });
 
   it("omits optional blocks when data is missing", async () => {
-    const sparse: ReportData = { ...data, risk: null, projection: null, correlation: null, episodes: [] };
+    const sparse: ReportData = { ...data, risk: null, projection: null, correlation: null, episodes: [], speculative: [] };
     const html = await renderReportHtml(sparse, narrative, "m");
     expect(html).not.toContain("20-year projection");
     expect(html).not.toContain("Risk statistics");

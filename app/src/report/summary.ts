@@ -2,6 +2,7 @@ import { factorMimickedReturns } from "../engine/factors";
 import { hasEnoughHistory, mulberry32, normalFrom, project, type ProjectionResult } from "../engine/montecarlo";
 import { lastClose } from "../engine/returns";
 import { runEpisode, runHypothetical, type Episode, type ScenarioResult } from "../engine/scenarios";
+import { runSpeculative, SPECULATIVE_SCENARIOS, type SpeculativeScenario } from "../engine/speculative";
 import { annualizedVol, correlationMatrix, cvar, historicalVaR, maxDrawdown, sharpe } from "../engine/stats";
 import type { Portfolio, PriceSeries, RegressionResult } from "../engine/types";
 import { fmtMoney, fmtNum, fmtPct, fmtSignedPct } from "../ui/format";
@@ -38,6 +39,7 @@ export interface ReportData {
   holdings: ReportHolding[];
   risk: ReportRisk | null;
   episodes: Array<{ episode: Episode; result: ScenarioResult }>;
+  speculative: Array<{ scenario: SpeculativeScenario; result: ScenarioResult }>;
   hypothetical: ScenarioResult;
   projection: ProjectionResult | null;
   projectionBasis: string;
@@ -89,6 +91,10 @@ export function buildReportData(
     result: runEpisode(scenarioInputs, episode),
   }));
   const hypothetical = runHypothetical(scenarioInputs, HYPO_EQUITY_SHOCK, HYPO_RATE_SHOCK_BPS);
+  const speculative = SPECULATIVE_SCENARIOS.map((scenario) => ({
+    scenario,
+    result: runSpeculative({ portfolio, prices, tickerInfo: staticData.tickerInfo }, scenario),
+  }));
 
   let projection: ProjectionResult | null = null;
   let projectionBasis = "";
@@ -135,6 +141,7 @@ export function buildReportData(
     holdings,
     risk,
     episodes,
+    speculative,
     hypothetical,
     projection,
     projectionBasis,
@@ -185,6 +192,15 @@ export function buildLlmSummary(data: ReportData): Record<string, unknown> {
       dollarImpact: fmtMoney(result.portfolioPnL),
       worstHolding: extreme(result, true),
       bestHolding: extreme(result, false),
+    })),
+    forwardLookingScenarios: data.speculative.map(({ scenario, result }) => ({
+      name: scenario.name,
+      premise: scenario.story,
+      portfolioReturn: fmtSignedPct(result.portfolioReturnPct),
+      dollarImpact: fmtMoney(result.portfolioPnL),
+      worstHolding: extreme(result, true),
+      bestHolding: extreme(result, false),
+      note: scenario.cashNote,
     })),
     hypotheticalShock: {
       assumption: `stocks ${HYPO_EQUITY_SHOCK}%, interest rates +${HYPO_RATE_SHOCK_BPS}bps`,

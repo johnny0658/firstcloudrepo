@@ -11,7 +11,7 @@ export function loadPortfolio(): Portfolio {
         return {
           holdings: parsed.holdings.filter(
             (h: { symbol?: unknown; shares?: unknown }) =>
-              typeof h.symbol === "string" && typeof h.shares === "number" && h.shares > 0,
+              typeof h.symbol === "string" && typeof h.shares === "number" && h.shares !== 0,
           ),
           cash: Math.max(0, parsed.cash),
         };

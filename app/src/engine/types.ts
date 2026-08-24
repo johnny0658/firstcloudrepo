@@ -11,11 +11,22 @@ export interface FactorTable {
   values: number[][]; // percent, as published by Ken French
 }
 
+export type AssetCategory =
+  | "us_broad"
+  | "us_tech"
+  | "robotics"
+  | "em_china"
+  | "intl_dev"
+  | "us_small_value"
+  | "gold";
+
 export interface TickerInfo {
   symbol: string;
   name: string;
   type: "stock" | "equity_etf" | "bond_etf" | "commodity_etf";
   duration?: number; // years; bond ETFs only
+  /** Asset category for speculative scenarios; type-based default when absent. */
+  category?: AssetCategory;
 }
 
 export interface Holding {
