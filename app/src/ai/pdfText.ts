@@ -17,8 +17,11 @@ export interface ExtractedPdf {
 }
 
 export async function extractPdfText(file: File): Promise<ExtractedPdf> {
-  const pdfjs = await import("pdfjs-dist");
-  const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
+  // Legacy build: transpiled + polyfilled (Promise.withResolvers, structuredClone,
+  // etc.) for older Safari / iOS. The modern build assumes very recent engines and
+  // throws an opaque "undefined is not a function" on those browsers.
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const workerUrl = (await import("pdfjs-dist/legacy/build/pdf.worker.min.mjs?url")).default;
   pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
   const loadingTask = pdfjs.getDocument({ data: await file.arrayBuffer() });
